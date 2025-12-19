@@ -21,14 +21,15 @@ local jengialueet = {
     }
 }
 
+-- chekkaa onks pelaaja alueella
 local function sisalalueetsssa(alueittencoordit, alueets)
     if alueets.type == "circle" then
         return #(alueittencoordit - alueets.center) <= alueets.radius
     else
-        local erillainenajattelia = alueittencoordit - alueets.center
-        return math.abs(erillainenajattelia.x) <= alueets.size.x / 2
-            and math.abs(erillainenajattelia.y) <= alueets.size.y / 2
-            and math.abs(erillainenajattelia.z) <= alueets.size.z / 2
+        local diff = alueittencoordit - alueets.center
+        return math.abs(diff.x) <= alueets.size.x / 2
+            and math.abs(diff.y) <= alueets.size.y / 2
+            and math.abs(diff.z) <= alueets.size.z / 2
     end
 end
 
@@ -44,8 +45,8 @@ end
 CreateThread(function()
     while true do
         local ped = PlayerPedId()
-        local alueittencoordit = GetEntityCoords(ped)
-        local inside = OnSallittualueets(alueittencoordit)
+        local coords = GetEntityCoords(ped)
+        local inside = OnSallittualueets(coords)
 
         if inside then
             SetPedDensityMultiplierThisFrame(0.6)
@@ -74,10 +75,10 @@ CreateThread(function()
         Wait(15000)
 
         local ped = PlayerPedId()
-        local alueittencoordit = GetEntityCoords(ped)
+        local coords = GetEntityCoords(ped)
 
-        if not OnSallittualueets(alueittencoordit) then
-            local px, py, pz = table.unpack(alueittencoordit)
+        if not OnSallittualueets(coords) then
+            local px, py, pz = table.unpack(coords)
             for veh in nistipaskaerateVehicles() do
                 if DoesEntityExist(veh) then
                     local vx, vy, vz = table.unpack(GetEntityCoords(veh))
