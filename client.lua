@@ -3,7 +3,6 @@ local jengialueet = {
         type = "box",
         center = vec3(-139.8724, 6375.8862, 31.4906),
         size = vec3(260.0, 560.0, 10.0),
-        radius = 180.0,
     },
     airport = {
         type = "circle",
@@ -19,15 +18,13 @@ local jengialueet = {
         type = "box",
         center = vec3(1700.2517, 3788.2898, 34.7753),
         size = vec3(400.0, 250.0, 10.0),
-        radius = 150.0,
     }
 }
-
 
 local function sisalalueetsssa(alueittencoordit, alueets)
     if alueets.type == "circle" then
         return #(alueittencoordit - alueets.center) <= alueets.radius
-    else 
+    else
         local erillainenajattelia = alueittencoordit - alueets.center
         return math.abs(erillainenajattelia.x) <= alueets.size.x / 2
             and math.abs(erillainenajattelia.y) <= alueets.size.y / 2
@@ -47,41 +44,48 @@ end
 CreateThread(function()
     while true do
         local ped = PlayerPedId()
-        local alueittencoordit = GetEntityalueittencoordit(ped)
+        local alueittencoordit = GetEntityCoords(ped)
+        local inside = OnSallittualueets(alueittencoordit)
 
-        if OnSallittualueets(alueittencoordit) then
+        if inside then
             SetPedDensityMultiplierThisFrame(0.6)
             SetScenarioPedDensityMultiplierThisFrame(0.6, 0.6)
             SetVehicleDensityMultiplierThisFrame(0.5)
             SetRandomVehicleDensityMultiplierThisFrame(0.5)
             SetParkedVehicleDensityMultiplierThisFrame(0.5)
+            SetGarbageTrucks(true)
+            SetRandomBoats(true)
         else
-            SetPedDensityMultiplierThisFrame(0.0)
-            SetScenarioPedDensityMultiplierThisFrame(0.0, 0.0)
-            SetVehicleDensityMultiplierThisFrame(0.0)
-            SetRandomVehicleDensityMultiplierThisFrame(0.0)
-            SetParkedVehicleDensityMultiplierThisFrame(0.0)
+            SetPedDensityMultiplierThisFrame(1.0)
+            SetScenarioPedDensityMultiplierThisFrame(1.0, 1.0)
+            SetVehicleDensityMultiplierThisFrame(1.0)
+            SetRandomVehicleDensityMultiplierThisFrame(1.0)
+            SetParkedVehicleDensityMultiplierThisFrame(1.0)
             SetGarbageTrucks(false)
             SetRandomBoats(false)
         end
 
-        Wait(0) 
+        Wait(0)
     end
 end)
 
 CreateThread(function()
     while true do
-        Wait(3000) 
+        Wait(15000)
 
         local ped = PlayerPedId()
-        local konalasepaskkakyrpacoordit = GetEntityalueittencoordit(ped)
+        local alueittencoordit = GetEntityCoords(ped)
 
-        if not OnSallittualueets(konalasepaskkakyrpacoordit) then
+        if not OnSallittualueets(alueittencoordit) then
+            local px, py, pz = table.unpack(alueittencoordit)
             for veh in nistipaskaerateVehicles() do
                 if DoesEntityExist(veh) then
-                    local driver = GetPedInVehicleSeat(veh, -1)
-                    if driver ~= 0 and not IsPedAPlayer(driver) then
-                        DeleteEntity(veh)
+                    local vx, vy, vz = table.unpack(GetEntityCoords(veh))
+                    if #(vector3(px, py, pz) - vector3(vx, vy, vz)) < 200.0 then
+                        local driver = GetPedInVehicleSeat(veh, -1)
+                        if driver ~= 0 and not IsPedAPlayer(driver) then
+                            DeleteEntity(veh)
+                        end
                     end
                 end
             end
