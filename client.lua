@@ -21,7 +21,6 @@ local jengialueet = {
     }
 }
 
--- chekkaa onks pelaaja alueella
 local function sisalalueetsssa(alueittencoordit, alueets)
     if alueets.type == "circle" then
         return #(alueittencoordit - alueets.center) <= alueets.radius
@@ -47,7 +46,7 @@ CreateThread(function()
         local ped = PlayerPedId()
         local coords = GetEntityCoords(ped)
         local inside = OnSallittualueets(coords)
-
+        
         if inside then
             SetPedDensityMultiplierThisFrame(0.6)
             SetScenarioPedDensityMultiplierThisFrame(0.6, 0.6)
@@ -57,37 +56,48 @@ CreateThread(function()
             SetGarbageTrucks(true)
             SetRandomBoats(true)
         else
-            SetPedDensityMultiplierThisFrame(1.0)
-            SetScenarioPedDensityMultiplierThisFrame(1.0, 1.0)
-            SetVehicleDensityMultiplierThisFrame(1.0)
-            SetRandomVehicleDensityMultiplierThisFrame(1.0)
-            SetParkedVehicleDensityMultiplierThisFrame(1.0)
+            SetPedDensityMultiplierThisFrame(0.0)
+            SetScenarioPedDensityMultiplierThisFrame(0.0, 0.0)
+            SetVehicleDensityMultiplierThisFrame(0.0)
+            SetRandomVehicleDensityMultiplierThisFrame(0.0)
+            SetParkedVehicleDensityMultiplierThisFrame(0.0)
             SetGarbageTrucks(false)
             SetRandomBoats(false)
         end
-
+        
         Wait(0)
     end
 end)
 
 CreateThread(function()
     while true do
-        Wait(15000)
-
-        local ped = PlayerPedId()
-        local coords = GetEntityCoords(ped)
-
-        if not OnSallittualueets(coords) then
-            local px, py, pz = table.unpack(coords)
-            for veh in nistipaskaerateVehicles() do
-                if DoesEntityExist(veh) then
-                    local vx, vy, vz = table.unpack(GetEntityCoords(veh))
-                    if #(vector3(px, py, pz) - vector3(vx, vy, vz)) < 200.0 then
-                        local driver = GetPedInVehicleSeat(veh, -1)
-                        if driver ~= 0 and not IsPedAPlayer(driver) then
-                            DeleteEntity(veh)
-                        end
+        Wait(3000)
+        
+        for veh in nistipaskaerateVehicles() do
+            if DoesEntityExist(veh) then
+                local vehCoords = GetEntityCoords(veh)
+                
+                if not OnSallittualueets(vehCoords) then
+                    local driver = GetPedInVehicleSeat(veh, -1)
+                    if driver ~= 0 and not IsPedAPlayer(driver) then
+                        DeleteEntity(veh)
                     end
+                end
+            end
+        end
+    end
+end)
+
+CreateThread(function()
+    while true do
+        Wait(3000)
+        
+        for ped in nistipaskaEratePeds() do
+            if DoesEntityExist(ped) and not IsPedAPlayer(ped) then
+                local pedCoords = GetEntityCoords(ped)
+                
+                if not OnSallittualueets(pedCoords) then
+                    DeleteEntity(ped)
                 end
             end
         end
@@ -109,16 +119,31 @@ function nistipaskaerateVehicles()
             EndFindVehicle(iter)
             return
         end
-
-        local nistipaska = { handle = iter, destructor = EndFindVehicle }
+        local nistipaska = {handle = iter, destructor = EndFindVehicle}
         setmetatable(nistipaska, pedmaarahampurilainen)
-
+        local ok = true
         repeat
             coroutine.yield(id)
-            local ok
             ok, id = FindNextVehicle(iter)
         until not ok
-
         EndFindVehicle(iter)
+    end)
+end
+
+function nistipaskaEratePeds()
+    return coroutine.wrap(function()
+        local iter, id = FindFirstPed()
+        if not id or id == 0 then
+            EndFindPed(iter)
+            return
+        end
+        local nistipaska = {handle = iter, destructor = EndFindPed}
+        setmetatable(nistipaska, pedmaarahampurilainen)
+        local ok = true
+        repeat
+            coroutine.yield(id)
+            ok, id = FindNextPed(iter)
+        until not ok
+        EndFindPed(iter)
     end)
 end
